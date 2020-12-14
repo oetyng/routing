@@ -419,6 +419,11 @@ impl Approved {
         self.section_keys_provider.key_share().ok()
     }
 
+    /// Returns the previous BLS public key set
+    pub fn previous_section_key_share(&self) -> Option<&SectionKeyShare> {
+        self.section_keys_provider.previous_key_share().ok()
+    }
+
     ////////////////////////////////////////////////////////////////////////////
     // Message handling
     ////////////////////////////////////////////////////////////////////////////

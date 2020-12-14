@@ -25,6 +25,8 @@ pub struct SectionKeyShare {
 /// Struct that holds the current section keys and helps with new key generation.
 #[derive(Debug)]
 pub struct SectionKeysProvider {
+    /// Our previous section BLS keys.
+    previous: Option<SectionKeyShare>,
     /// Our current section BLS keys.
     current: Option<SectionKeyShare>,
     /// The new keys to use when section update completes.
@@ -34,9 +36,17 @@ pub struct SectionKeysProvider {
 impl SectionKeysProvider {
     pub fn new(current: Option<SectionKeyShare>) -> Self {
         Self {
+            previous: None,
             current,
             pending: None,
         }
+    }
+
+    /// As to access previous key,
+    /// needed by upper layers to transition
+    /// to our current key.
+    pub fn previous_key_share(&self) -> Result<&SectionKeyShare> {
+        self.previous.as_ref().ok_or(Error::MissingSecretKeyShare)
     }
 
     pub fn key_share(&self) -> Result<&SectionKeyShare> {
@@ -65,6 +75,7 @@ impl SectionKeysProvider {
 
             if pending_public_key == *public_key {
                 trace!("finalise DKG: {:?}", pending_public_key);
+                self.previous = self.current.take();
                 self.current = self.pending.take();
             }
         }

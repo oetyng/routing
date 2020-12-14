@@ -289,6 +289,15 @@ impl Routing {
         self.stage.clone().handle_commands(command).await
     }
 
+    /// Returns our section proof chain.
+    pub async fn our_history(&self) -> SectionProofChain {
+        self.stage.state.lock().await.section().chain().clone()
+    }
+
+    /// ---------------------------------------------------------------
+    /// ------------------ CURRENT SECTION KEY ------------------------
+    /// ---------------------------------------------------------------
+
     /// Returns the current BLS public key set if this node has one, or
     /// `Error::InvalidState` otherwise.
     pub async fn public_key_set(&self) -> Result<bls::PublicKeySet> {
@@ -325,11 +334,6 @@ impl Routing {
             .ok_or(Error::MissingSecretKeyShare)
     }
 
-    /// Returns our section proof chain.
-    pub async fn our_history(&self) -> SectionProofChain {
-        self.stage.state.lock().await.section().chain().clone()
-    }
-
     /// Returns our index in the current BLS group if this node is a member of one, or
     /// `Error::MissingSecretKeyShare` otherwise.
     pub async fn our_index(&self) -> Result<usize> {
@@ -338,6 +342,61 @@ impl Routing {
             .lock()
             .await
             .section_key_share()
+            .map(|share| share.index)
+            .ok_or(Error::MissingSecretKeyShare)
+    }
+
+    /// ---------------------------------------------------------------
+    /// ------------------ PREVIOUS SECTION KEY -----------------------
+    /// ---------------------------------------------------------------
+
+    /// Returns the previous BLS public key set if this node had one, or
+    /// `Error::InvalidState` otherwise.
+    pub async fn previous_public_key_set(&self) -> Result<bls::PublicKeySet> {
+        self.stage
+            .state
+            .lock()
+            .await
+            .previous_section_key_share()
+            .map(|share| share.public_key_set.clone())
+            .ok_or(Error::InvalidState)
+    }
+
+    /// Returns the previous BLS secret key share or `Error::InvalidState` if we were not
+    /// an elder.
+    pub async fn previous_secret_key_share(&self) -> Result<bls::SecretKeyShare> {
+        self.stage
+            .state
+            .lock()
+            .await
+            .previous_section_key_share()
+            .map(|share| share.secret_key_share.clone())
+            .ok_or(Error::MissingSecretKeyShare)
+    }
+
+    /// Signs `data` with the previous BLS secret key share of this node, if it had any. Returns
+    /// `Error::MissingSecretKeyShare` otherwise.
+    pub async fn previous_sign_with_secret_key_share(
+        &self,
+        data: &[u8],
+    ) -> Result<bls::SignatureShare> {
+        self.stage
+            .state
+            .lock()
+            .await
+            .previous_section_key_share()
+            .map(|share| share.secret_key_share.sign(data))
+            .ok_or(Error::MissingSecretKeyShare)
+    }
+
+    /// Returns our index in the previous BLS group if this node was a member of one, or
+    /// `Error::MissingSecretKeyShare` otherwise.
+    pub async fn previous_our_index(&self) -> Result<usize> {
+        self.stage
+            .state
+            .lock()
+            .await
+            .previous_section_key_share()
             .map(|share| share.index)
             .ok_or(Error::MissingSecretKeyShare)
     }
