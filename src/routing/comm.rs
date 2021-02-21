@@ -267,8 +267,11 @@ async fn handle_incoming_messages(
     mut event_tx: mpsc::Sender<ConnectionEvent>,
 ) {
     while let Some((src, msg)) = incoming_msgs.next().await {
+        trace!("received from qp2p::IncomingMessages, sending on mpsc::Sender..");
         let _ = event_tx.send(ConnectionEvent::Received((src, msg))).await;
+        trace!("sent on mpsc::Sender");
     }
+    trace!("exited handle_incoming_messages loop");
 }
 
 #[cfg(test)]

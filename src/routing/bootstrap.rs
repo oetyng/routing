@@ -32,7 +32,7 @@ use std::{
     net::SocketAddr,
 };
 use tokio::sync::mpsc;
-use tracing::Instrument;
+//use tracing::Instrument;
 use xor_name::{Prefix, XorName};
 
 const BACKLOG_CAPACITY: usize = 100;
@@ -51,7 +51,7 @@ pub(crate) async fn initial(
     let (send_tx, send_rx) = mpsc::channel(1);
     let recv_rx = MessageReceiver::Raw(incoming_conns);
 
-    let span = trace_span!("bootstrap::initial", name = %node.name());
+    //let span = trace_span!("bootstrap::initial", name = %node.name());
 
     let state = State::new(node, send_tx, recv_rx);
 
@@ -59,7 +59,7 @@ pub(crate) async fn initial(
         state.run(vec![bootstrap_addr], None),
         send_messages(send_rx, comm),
     )
-    .instrument(span)
+    // .instrument(span)
     .await
     .0
 }
@@ -79,7 +79,7 @@ pub(crate) async fn relocate(
     let (send_tx, send_rx) = mpsc::channel(1);
     let recv_rx = MessageReceiver::Deserialized(recv_rx);
 
-    let span = trace_span!("bootstrap::relocate", name = %node.name());
+    //let span = trace_span!("bootstrap::relocate", name = %node.name());
 
     let state = State::new(node, send_tx, recv_rx);
 
@@ -87,7 +87,7 @@ pub(crate) async fn relocate(
         state.run(bootstrap_addrs, Some(relocate_details)),
         send_messages(send_rx, comm),
     )
-    .instrument(span)
+    // .instrument(span)
     .await
     .0
 }

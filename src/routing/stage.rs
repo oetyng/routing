@@ -14,7 +14,7 @@ use tokio::{
     sync::{mpsc, watch, Mutex},
     time,
 };
-use tracing::Instrument;
+//use tracing::Instrument;
 
 // Node's current stage which is responsible
 // for accessing current info and trigger operations.
@@ -49,7 +49,11 @@ impl Stage {
     /// Handles the given command and transitively any new commands that are produced during its
     /// handling.
     pub async fn handle_commands(self: Arc<Self>, command: Command) -> Result<()> {
-        let commands = self.handle_command(command).await?;
+        //let commands = self.handle_command(command).await?;
+        let commands = self.try_handle_command(command).await.map_err(|error| {
+            error!("Error encountered when handling command: {}", error);
+            error
+        })?;
         for command in commands {
             self.clone().spawn_handle_commands(command)
         }
@@ -57,33 +61,33 @@ impl Stage {
         Ok(())
     }
 
-    /// Handles a single command.
-    pub async fn handle_command(&self, command: Command) -> Result<Vec<Command>> {
-        // Create a tracing span containing info about the current node. This is very useful when
-        // analyzing logs produced by running multiple nodes within the same process, for example
-        // from integration tests.
-        let span = {
-            let state = self.state.lock().await;
-            trace_span!(
-                "handle_command",
-                name = %state.node().name(),
-                prefix = format_args!("({:b})", state.section().prefix()),
-                age = state.node().age,
-                elder = state.is_elder(),
-            )
-        };
+    // /// Handles a single command.
+    // pub async fn handle_command(&self, command: Command) -> Result<Vec<Command>> {
+    //     // Create a tracing span containing info about the current node. This is very useful when
+    //     // analyzing logs produced by running multiple nodes within the same process, for example
+    //     // from integration tests.
+    //     let span = {
+    //         let state = self.state.lock().await;
+    //         trace_span!(
+    //             "handle_command",
+    //             name = %state.node().name(),
+    //             prefix = format_args!("({:b})", state.section().prefix()),
+    //             age = state.node().age,
+    //             elder = state.is_elder(),
+    //         )
+    //     };
 
-        async {
-            trace!(?command);
+    //     async {
+    //         trace!(?command);
 
-            self.try_handle_command(command).await.map_err(|error| {
-                error!("Error encountered when handling command: {}", error);
-                error
-            })
-        }
-        .instrument(span)
-        .await
-    }
+    //         self.try_handle_command(command).await.map_err(|error| {
+    //             error!("Error encountered when handling command: {}", error);
+    //             error
+    //         })
+    //     }
+    //     .instrument(span)
+    //     .await
+    // }
 
     // Terminate this routing instance - cancel all scheduled timers including any future ones,
     // close all network connections and stop accepting new connections.

@@ -392,6 +392,7 @@ async fn handle_connection_events(
             }
         }
     }
+    trace!("exited handle_connection_events loop");
 }
 
 async fn handle_message(stage: Arc<Stage>, bytes: Bytes, sender: SocketAddr) {
